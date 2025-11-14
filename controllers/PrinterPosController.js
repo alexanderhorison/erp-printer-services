@@ -6,7 +6,7 @@ const dnsLookup = promisify(dns.lookup);
 
 // DNS Cache untuk mDNS/Bonjour hostname
 const dnsCache = new Map();
-const DNS_CACHE_TTL = 60000; // 60 detik
+const DNS_CACHE_TTL = 86400000; // 1 hari (24 jam)
 
 class PrinterPosController {
   static async printPos(req, res) {
