@@ -25,11 +25,11 @@ class PrinterPosController {
 
       // Default ke pos-tba-1.local (Bonjour network printer)
       // TIP: Gunakan IP langsung untuk menghindari DNS lookup delay
-      const printerHost = printerSetting?.printerHost || "pos-tba-1.local";
+      const ip = printerSetting?.ip;
       const printerPort = printerSetting?.printerPort || 9100; // Standard port untuk network POS printer
 
       console.log(`[TIMING] Request received at ${new Date().toISOString()}`);
-      console.log(`[TIMING] Target printer: ${printerHost}:${printerPort}`);
+      console.log(`[TIMING] Target printer: ${ip}:${printerPort}`);
 
       // Convert string buffer to binary Buffer
       let dataToPrintBuffer;
@@ -51,47 +51,47 @@ class PrinterPosController {
       console.log(`[TIMING] Buffer conversion: ${timing.bufferConversion}ms`);
 
       // Resolve hostname ke IP (dengan cache untuk performa)
-      let resolvedIP = printerHost;
+      let resolvedIP = ip;
 
       // Cek apakah sudah IP address atau hostname
-      const isIPAddress = /^(\d{1,3}\.){3}\d{1,3}$/.test(printerHost);
+      const isIPAddress = /^(\d{1,3}\.){3}\d{1,3}$/.test(ip);
 
       if (!isIPAddress) {
         const dnsStartTime = Date.now();
-        const cached = dnsCache.get(printerHost);
+        const cached = dnsCache.get(ip);
 
         if (cached && Date.now() - cached.timestamp < DNS_CACHE_TTL) {
           resolvedIP = cached.ip;
           timing.dnsLookup = Date.now() - dnsStartTime;
           console.log(
-            `[TIMING] DNS cache hit: ${printerHost} -> ${resolvedIP} (${timing.dnsLookup}ms)`
+            `[TIMING] DNS cache hit: ${ip} -> ${resolvedIP} (${timing.dnsLookup}ms)`
           );
         } else {
           try {
-            const result = await dnsLookup(printerHost);
+            const result = await dnsLookup(ip);
             resolvedIP = result.address;
-            dnsCache.set(printerHost, {
+            dnsCache.set(ip, {
               ip: resolvedIP,
               timestamp: Date.now(),
             });
             timing.dnsLookup = Date.now() - dnsStartTime;
             console.log(
-              `[TIMING] DNS lookup: ${printerHost} -> ${resolvedIP} (${timing.dnsLookup}ms)`
+              `[TIMING] DNS lookup: ${ip} -> ${resolvedIP} (${timing.dnsLookup}ms)`
             );
           } catch (dnsErr) {
             console.error(
-              `[TIMING] DNS lookup failed for ${printerHost}:`,
+              `[TIMING] DNS lookup failed for ${ip}:`,
               dnsErr.message
             );
             return res.status(500).json({
               success: false,
-              message: `Failed to resolve printer hostname: ${printerHost}`,
+              message: `Failed to resolve printer hostname: ${ip}`,
               error: dnsErr.message,
             });
           }
         }
       } else {
-        console.log(`[TIMING] Using IP address directly: ${printerHost}`);
+        console.log(`[TIMING] Using IP address directly: ${ip}`);
       }
 
       // Send raw binary data via TCP socket to network printer
@@ -108,7 +108,7 @@ class PrinterPosController {
       client.connect(printerPort, resolvedIP, () => {
         connectTime = Date.now() - connectStartTime;
         console.log(
-          `[TIMING] Connected to printer ${printerHost}:${printerPort} in ${connectTime}ms`
+          `[TIMING] Connected to printer ${ip}:${printerPort} in ${connectTime}ms`
         );
 
         const writeStartTime = Date.now();

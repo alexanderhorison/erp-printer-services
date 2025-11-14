@@ -13,13 +13,13 @@ class PrinterCheckController {
       return {
         ip: printer.ip,
         name: printer.name,
-        status: isConnected ? "connected" : "rto",
+        status: isConnected ? "ONLINE" : "OFFLINE",
       };
     } catch (error) {
       return {
         ip: printer.ip,
         name: printer.name,
-        status: "rto",
+        status: "OFFLINE",
       };
     }
   }
@@ -35,6 +35,19 @@ class PrinterCheckController {
       );
 
       res.status(200).json(results);
+    } catch (error) {
+      res.status(500).json({
+        error: error.message,
+      });
+    }
+  }
+
+  static async checkByIp(req, res) {
+    try {
+      const { ip, name } = req.body;
+      const printer = { ip, name };
+      const result = await PrinterCheckController.checkPrinter(printer);
+      res.status(200).json(result);
     } catch (error) {
       res.status(500).json({
         error: error.message,
